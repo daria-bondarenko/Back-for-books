@@ -1,3 +1,3 @@
 module.exports = {
-  jwt: 'dev-jwt'
+  jwtSecret: 'hello world'
 }

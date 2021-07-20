@@ -4,21 +4,19 @@ const authMiddleware = require('../../../middleware/auth')
 
 const {
   getAllBooks,
+  getOneBook,
   createNewBook,
   editBook,
   deleteBook,
-  getAllBooksSortName,
-  getAllBooksSortDate,
-  getBooksFilterSubstring
+  softDeleteBook
 } = require('../controllers/book.controller');
 
 router.get('/getAllBooks', authMiddleware, getAllBooks);
+router.get('/getOneBook', authMiddleware, getOneBook);
 router.post('/createNewBook', authMiddleware, createNewBook);
-router.post('/getAllBooksSortName', authMiddleware, getAllBooksSortName);
-router.post('/getAllBooksSortDate', authMiddleware, getAllBooksSortDate);
-router.post('/getBooksFilterSubstring', authMiddleware, getBooksFilterSubstring);
-router.patch('/editBook', authMiddleware, editBook);
+router.put('/editBook', authMiddleware, editBook);
 router.delete('/deleteBook', authMiddleware, deleteBook);
+router.delete('/softDeleteBook', authMiddleware, softDeleteBook);
 
 const {
   signIn,

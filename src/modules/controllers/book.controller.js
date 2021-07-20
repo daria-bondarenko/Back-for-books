@@ -1,45 +1,51 @@
 const _ = require('underscore');
 const Book = require('../../db/models/book/index');
 
-
 module.exports.getAllBooks = async (req, res) => {
-  const result = await Book.find({});
-  res.send({data: result});
+  const {sortby, dir, search, show = 10, page = 0} = req.query;
+  let resultSort;
+  let resultSearch;
+
+  if (search) {
+    const allBooks = await Book.find({removed: false});
+    resultSearch = _.filter(allBooks, (arr) => {
+      return arr.name.includes(search)
+    })
+  } else {
+    resultSearch = await Book.find({removed: false});
+  }
+
+  if (sortby === "name" ||
+    sortby === "author" ||
+    sortby === "year" ||
+    sortby === "genre"
+  ) {
+    if (dir === "desc") {
+      const ascSort = _.sortBy(resultSearch, `${sortby}`);
+      resultSort = ascSort.reverse()
+    } else {
+      resultSort = _.sortBy(resultSearch, `${sortby}`);
+    }
+  } else {
+    resultSort = resultSearch
+  }
+
+  const paginationArray = _.chunk(resultSort, show);
+  const result = paginationArray[page];
+
+  res.send({data: result, meta: {total: resultSort.length, show, page: page + 1}});
 };
 
-module.exports.getAllBooksSortName = async (req, res) => {
-  if (req.body.direction === 'asc') {
-    const allBooks = await Book.find({});
-    const asc = _.sortBy(allBooks, 'name');
-    res.send({data: asc});
+module.exports.getOneBook = async (req, res) => {
+  console.log(req.query)
+  const {_id} = req.query;
+  const result = await Book.find({_id});
+  if (result.removed) {
+    res.send({data: []});
+  } else {
+    res.send({data: result});
   }
-  if (req.body.direction === 'desc') {
-    const allBooks = await Book.find({});
-    const asc = _.sortBy(allBooks, 'name');
-    const desc = asc.reverse()
-    res.send({data: desc});
-  }
-};
 
-module.exports.getAllBooksSortDate = async (req, res) => {
-  if (req.body.direction === 'asc') {
-    const allBooks = await Book.find({});
-    const asc = _.sortBy(allBooks, 'date');
-    res.send({data: asc});
-  }
-  if (req.body.direction === 'desc') {
-    const allBooks = await Book.find({});
-    const asc = _.sortBy(allBooks, 'date');
-    const desc = asc.reverse()
-    res.send({data: desc});
-  }
-};
-
-module.exports.getBooksFilterSubstring = async (req, res) => {
-  console.log(req.body);
-  const allBooks = await Book.find({});
-  const result = _.filter(allBooks, function(arr){ return arr.name.includes(req.body.ourSubstr)})
-  res.send({data: result});
 };
 
 module.exports.createNewBook = (req, res) => {
@@ -72,14 +78,14 @@ module.exports.editBook = (req, res) => {
         (req.body[key])) {
         Book.updateOne({_id}, {[key]: req.body[key]}
         ).then(result => {
-          Book.find({}).then(result => {
+          Book.find({_id}).then(result => {
             res.send({data: result})
           })
         })
       }
     }
   } else {
-    Book.find({}).then(result => {
+    Book.find({_id}).then(result => {
       res.send({data: result})
     })
   }
@@ -87,7 +93,15 @@ module.exports.editBook = (req, res) => {
 
 module.exports.deleteBook = (req, res) => {
   Book.deleteOne({_id: req.query._id}).then(result => {
-    Book.find({}).then(result => {
+    Book.find({removed: false}).then(result => {
+      res.send({data: result});
+    })
+  })
+};
+
+module.exports.softDeleteBook = (req, res) => {
+  Book.findOneAndUpdate({_id: req.query._id}, {removed: true}).then(result => {
+    Book.find({removed: false}).then(result => {
       res.send({data: result});
     })
   })

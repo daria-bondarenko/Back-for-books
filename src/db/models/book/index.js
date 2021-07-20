@@ -11,12 +11,16 @@ const bookScheme = new Schema({
     type: String,
     required: true
   },
-  date: {
+  year: {
     type: Number,
     required: true
   },
   genre: {
     type: String,
+    required: true
+  },
+  removed: {
+    type: Boolean,
     required: true
   }
 });

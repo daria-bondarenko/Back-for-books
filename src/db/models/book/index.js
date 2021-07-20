@@ -21,4 +21,4 @@ const bookScheme = new Schema({
   }
 });
 
-module.exports = Record = mongoose.model('books', bookScheme);
+module.exports = Book = mongoose.model('books', bookScheme);

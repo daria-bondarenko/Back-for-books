@@ -1,10 +1,11 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken')
+const updateTokens = require('../helpers/helpersFunction');
+
 const User = require('../../db/models/user/index');
-const keys = require('../../../config/keys')
 
 module.exports.createNewUser = async (req, res) => {
-  const candidate = await User.findOne({email: req.body.email});
+  const {email, password} = req.body;
+  const candidate = await User.findOne({email});
 
   if (candidate) {
     res.status(404).json({
@@ -12,26 +13,21 @@ module.exports.createNewUser = async (req, res) => {
     })
   } else {
     const salt = bcrypt.genSaltSync(10);
-    const password = req.body.password;
-    const user = new User({
-      email: req.body.email,
+    const newUser = new User({
+      email,
       password: bcrypt.hashSync(password, salt)
     })
 
     try {
-      await user.save().then(result => {
-        User.find({email: req.body.email}).then(result => {
-        })
-        const token = jwt.sign({
-          email: req.body.email,
-          userId: result._id
-        }, keys.jwt, {expiresIn: 60 * 60});
+      await newUser.save();
+      const user = await User.find({email});
+      const {accessToken, refreshToken} = await updateTokens(user[0]._id);
 
-        res.status(200).json({
-          email: req.body.email,
-          token: `Bearer ${token}`
-        })
-      });
+      res.status(200).json({
+        email,
+        accessToken,
+        refreshToken
+      })
     } catch (e) {
       res.status(409).json({
         message: 'Что-то пошло не так, попробуй еще раз :)'
@@ -40,25 +36,22 @@ module.exports.createNewUser = async (req, res) => {
   }
 };
 
-module.exports.authUser = async (req, res) => {
-  const candidate = await User.findOne({email: req.body.email});
+module.exports.signIn = async (req, res) => {
+  const {email, password} = req.body;
+  const candidate = await User.findOne({email});
 
-  if (candidate) {
-    const passwordResult = bcrypt.compareSync(req.body.password, candidate.password);
-    if (passwordResult) {
-      const token = jwt.sign({
-        email: candidate.email,
-        userId: candidate._id
-      }, keys.jwt, {expiresIn: 60 * 60});
-
-      res.status(200).json({
-        email: req.body.email,
-        token: `Bearer ${token}`
-      })
-    } else {
-      res.status(401).json({message: 'Пароль не правильный'});
+  try {
+    if (!candidate) {
+      res.status(401).json({message: "Нет такого юзера..."})
     }
-  } else {
-    res.status(404).json({message: 'Такого юзера нет'})
+    const isValid = bcrypt.compareSync(password, candidate.password);
+    if (isValid) {
+      const tokens = await updateTokens(candidate._id);
+      res.json(tokens);
+    } else {
+      res.status(401).json({message: 'Проверь пароль...'})
+    }
+  } catch (e) {
+    res.status(500).json({message: e.message})
   }
-};
+}

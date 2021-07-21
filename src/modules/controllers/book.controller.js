@@ -2,38 +2,50 @@ const _ = require('underscore');
 const Book = require('../../db/models/book/index');
 
 module.exports.getAllBooks = async (req, res) => {
-  const {sortby, dir, search, show = 10, page = 0} = req.query;
-  let resultSort;
-  let resultSearch;
+  const {sortby = "", dir = "asc", search, show = 10, page = 0} = req.query;
+  let resultArr = await Book.find({removed: false});
 
-  if (search) {
-    const allBooks = await Book.find({removed: false});
-    resultSearch = _.filter(allBooks, (arr) => {
-      return arr.name.includes(search)
-    })
-  } else {
-    resultSearch = await Book.find({removed: false});
-  }
-
-  if (sortby === "name" ||
-    sortby === "author" ||
-    sortby === "year" ||
-    sortby === "genre"
-  ) {
-    if (dir === "desc") {
-      const ascSort = _.sortBy(resultSearch, `${sortby}`);
-      resultSort = ascSort.reverse()
-    } else {
-      resultSort = _.sortBy(resultSearch, `${sortby}`);
+  try {
+    if (search &&
+      sortby === "name" ||
+      "author" ||
+      "year" ||
+      "genre") {
+      if (dir === "desc") {
+        resultArr = await Book.find({removed: false, name: {$regex: `${search}`}}).sort({[search]: 'desc'});
+      } else {
+        resultArr = await Book.find({removed: false, name: {$regex: `${search}`}}).sort({[search]: 'asc'});
+      }
     }
-  } else {
-    resultSort = resultSearch
+
+    if (search &&
+      sortby !== "name" &&
+      "author" &&
+      "year" &&
+      "genre") {
+      resultArr = await Book.find({removed: false, name: {$regex: `${search}`}})
+    }
+
+    if (!search &&
+      sortby === "name" ||
+      "author" ||
+      "year" ||
+      "genre") {
+      if (dir === "desc") {
+        resultArr = await Book.find({removed: false}).sort({[search]: 'desc'});
+      } else {
+        resultArr = await Book.find({removed: false}).sort({[search]: 'asc'});
+      }
+    }
+
+    const paginationArray = _.chunk(resultArr, show);
+    const resultArrChunk = paginationArray[page];
+
+    res.send({data: resultArrChunk, meta: {total: resultArr.length, show, page: page + 1}});
+  } catch (e) {
+    res.status(400).json({message: "Что-то пошло не так :("})
   }
 
-  const paginationArray = _.chunk(resultSort, show);
-  const result = paginationArray[page];
-
-  res.send({data: result, meta: {total: resultSort.length, show, page: page + 1}});
 };
 
 module.exports.getOneBook = async (req, res) => {
@@ -48,8 +60,8 @@ module.exports.getOneBook = async (req, res) => {
 };
 
 module.exports.createNewBook = (req, res) => {
-  const { name, author, year, genre } = req.body;
-  const { filename } = req.file;
+  const {name, author, year, genre} = req.body;
+  const {filename} = req.file;
 
   const book = new Book({
     name,

@@ -1,14 +1,16 @@
+require('dotenv').config();
+
 module.exports = {
   jwt: {
-    jwtSecret: 'hello world',
+    jwtSecret: process.env.jwtSecret,
     tokens: {
       access: {
         type: 'access',
-        expiresIn: '55m'
+        expiresIn: process.env.timeForAccessToken
       },
       refresh: {
         type: 'refresh',
-        expiresIn: '3h'
+        expiresIn: process.env.timeForRefreshToken
       }
     }
   }

@@ -1,8 +1,9 @@
 const express = require('express');
 const mongoose = require('mongoose');
 const cors = require('cors');
-const app = express();
 const path = require("path");
+
+const app = express();
 
 const apiRoutes = require('./src/modules/routes/routes');
 app.use(express.static(path.join(__dirname, "public")));

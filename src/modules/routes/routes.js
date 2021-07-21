@@ -4,7 +4,7 @@ const path = require("path");
 const authMiddleware = require('../../../middleware/auth');
 
 const multer = require("multer");
-const uuid4 = require("uuid").v4;
+const { v4: uuid4 } = require("uuid");
 const storage = multer.diskStorage({
   destination: path.join(__dirname, "../../../public/uploads"),
   filename: (req, file, cb) => {

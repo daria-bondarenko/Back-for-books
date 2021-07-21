@@ -45,18 +45,22 @@ module.exports.getOneBook = async (req, res) => {
   } else {
     res.send({data: result});
   }
-
 };
 
 module.exports.createNewBook = (req, res) => {
+  const { name, author, year, genre } = req.body;
+  const { filename } = req.file;
+
   const book = new Book({
-    name: req.body.name,
-    author: req.body.author,
-    date: req.body.date,
-    genre: req.body.genre
+    name,
+    author,
+    year: Number(year),
+    genre,
+    removed: false,
+    img: "/uploads/" + filename
   });
   book.save().then(result => {
-    Book.find({}).then(result => {
+    Book.find({removed: false}).then(result => {
       res.send({data: result});
     });
   });
@@ -92,14 +96,6 @@ module.exports.editBook = (req, res) => {
 };
 
 module.exports.deleteBook = (req, res) => {
-  Book.deleteOne({_id: req.query._id}).then(result => {
-    Book.find({removed: false}).then(result => {
-      res.send({data: result});
-    })
-  })
-};
-
-module.exports.softDeleteBook = (req, res) => {
   Book.findOneAndUpdate({_id: req.query._id}, {removed: true}).then(result => {
     Book.find({removed: false}).then(result => {
       res.send({data: result});

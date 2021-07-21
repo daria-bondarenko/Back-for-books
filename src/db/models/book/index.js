@@ -22,6 +22,10 @@ const bookScheme = new Schema({
   removed: {
     type: Boolean,
     required: true
+  },
+  img: {
+    type: String,
+    required: true
   }
 });
 
